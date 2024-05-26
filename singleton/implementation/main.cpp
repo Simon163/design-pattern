@@ -5,8 +5,8 @@
 
 #ifdef LAZY_LOCK
 #include "lazy_lock.h"
-#elif LAZY_LOCK_NO
-#include "lazy_lock_no_thread_safe.h"
+#elif LAZY_NO
+#include "lazy_no_thread_safe.h"
 #elif HUNGRY_NEW
 #include "hungry_new.h"
 #elif HUNGRY_STATIC
@@ -22,7 +22,7 @@ void *printHello(void *threadid)
 
     std::cout << "Hi, I am the thread with ID:[" << tid << "]" << std::endl;
 
-#if defined(LAZY_LOCK) || defined(LAZY_LOCK_NO) || defined(HUNGRY_NEW)
+#if defined(LAZY_LOCK) || defined(LAZY_NO) || defined(HUNGRY_NEW)
     Singleton::getInstance()->print();
 #elif LAZY
     Singleton::getInstance().print();
@@ -59,7 +59,7 @@ int main(void)
     
     sleep(1);//sleep 1s, ensure the other threads to run
      
-#if defined(LAZY_LOCK) || defined(LAZY_LOCK_NO) || defined(HUNGRY_NEW)
+#if defined(LAZY_LOCK) || defined(LAZY_NO) || defined(HUNGRY_NEW)
     Singleton::deleteInstance();
 #endif
     std::cout << "main() : done! " << std::endl;
@@ -68,6 +68,6 @@ int main(void)
 }
 
 //g++ main.cpp -DLAZY_LOCK -o main -pthread
-//g++ main.cpp -DLAZY_LOCK_NO -o main -pthread
+//g++ main.cpp -DLAZY_NO -o main -pthread
 //g++ main.cpp -DHUNGRY_NEW -o main -pthread
 //g++ main.cpp -DHUNGRY_STATIC -o main -pthread
