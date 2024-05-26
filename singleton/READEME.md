@@ -30,7 +30,7 @@ This repo provides two implementations for lazy initialization and hungry initia
 	 
 	 build: cd singleton/implementation && g++ main.cpp -DHUNGRY_STATIC -o main -pthread
 
-[hungry initialization using the static variable](singleton/implementation/hungry_static.h) is recommended to implement the singleton design pattern from the perspective of less amount of code and thread safety guarantees.
+[hungry initialization using the static variable](implementation/hungry_static.h) is recommended to implement the singleton design pattern from the perspective of less amount of code and thread safety guarantees.
 
 ### use case
 This repo provides a use case for applying the singleton design pattern to implement the functionality test of operators in the machine learning domain.
