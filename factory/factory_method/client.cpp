@@ -1,5 +1,5 @@
 
-#include "factory.h"
+#include "factory_method.h"
 
 int main() {
 
