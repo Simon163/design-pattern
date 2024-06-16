@@ -1,0 +1,4 @@
+
+The Decorator Pattern is a design pattern that dynamically adds some additional functionality to an object. It is more flexible than generating subclasses. This pattern creates a decorator class to wrap the original class and provides additional functionality while maintaining the integrity of the original class’s functionality.
+
+An example is given to illustrate how to use the Decorator Pattern. Suppose we have a simple text printing functionality, and now we need to add different decorations to the printing functionality, such as bold, italics, or color, without changing the original printing class.
