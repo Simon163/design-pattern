@@ -1,0 +1,1 @@
+The Observer Pattern is a design pattern that defines a one-to-many dependency between objects so that when one object’s state changes, all dependent objects are notified and updated automatically. In C++, the Observer Pattern is typically implemented using pointers or references for object communication.
