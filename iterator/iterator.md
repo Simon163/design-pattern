@@ -1,0 +1,2 @@
+
+The Iterator Pattern provides a unified interface to access elements of a collection object without exposing the underlying representation of the collection. This allows the traversal operation to be separated from the collection class, making the collection more flexible and independent of the traversal algorithm.
