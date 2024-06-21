@@ -1,0 +1,1 @@
+The Builder Pattern allows you to separate the construction of a complex object from its representation, so that the same construction process can create different representations. This pattern provides an optimal way to create objects, especially when the construction process must allow for varying steps.
