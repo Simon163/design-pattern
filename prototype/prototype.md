@@ -1,0 +1,1 @@
+The Prototype Pattern allows the creation of object copies by cloning existing instances rather than using the new operator to create new objects. This is particularly useful in scenarios where the initialization cost is high or the construction process is complex.

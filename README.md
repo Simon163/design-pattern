@@ -8,3 +8,4 @@ This repo is used to provide the C++ implemention of common design patterns.
 ## [observer](observer/observer.md)
 ## [chain of responsiblity](chain_of_responsiblity/chain_of_responsiblity.md)
 ## [builder](builder/builder.md)
+## [prototype](prototype/prototype.md)
