@@ -4,7 +4,7 @@
 #include <iostream>
 #include <memory>
 
-// protype interface
+// prototype interface
 class IPrototype {
  public:
   virtual ~IPrototype() {}
