@@ -1,9 +1,9 @@
 /*
  *  testSuite.h
- *  
+ *
  *  Copyright (C) 2024
  *  Author: Simon (dewen.wu@gmail.com)
- *  
+ *
  */
 
 #pragma once
@@ -13,68 +13,68 @@
 
 /* test case */
 class TestCase {
-    friend class TestSuite;
+  friend class TestSuite;
 
-public:
-    /*
-     * @brief deinitializer
-     */
-    virtual ~TestCase() = default;
-    /*
-     * @brief run test case
-     */
-    virtual int run() = 0;
+ public:
+  /*
+   * @brief deinitializer
+   */
+  virtual ~TestCase() = default;
+  /*
+   * @brief run test case
+   */
+  virtual int run() = 0;
 
-private:
-    /* case name */
-    std::string name;
+ private:
+  /* case name */
+  std::string name;
 };
 
 /* test suite */
 class TestSuite {
-public:
-    /*
-     * @brief get shared instance
-     * @return shared instance
-     */
-    static TestSuite* get();
+ public:
+  /*
+   * @brief get shared instance
+   * @return shared instance
+   */
+  static TestSuite* get();
 
-public:
-    /*
-     * @brief register runable test case
-     * @param test test case
-     * @param name case name
-     */
-    void add(TestCase* test, std::string name);
-    /*
-     * @brief run all registered test case
-     */
-    static void runAll();
-    /*
-     * @brief run registered test case that matches in name
-     * @param name case name
-     */
-    static void run(std::string name);
+ public:
+  /*
+   * @brief register runable test case
+   * @param test test case
+   * @param name case name
+   */
+  void add(TestCase* test, std::string name);
+  /*
+   * @brief run all registered test case
+   */
+  static void runAll();
+  /*
+   * @brief run registered test case that matches in name
+   * @param name case name
+   */
+  static void run(std::string name);
 
-private:
-    // forbid external construction
-    TestSuite();
+ private:
+  // forbid external construction
+  TestSuite();
 
-    // forbid external deconstruction
-    ~TestSuite();
+  // forbid external deconstruction
+  ~TestSuite();
 
-public:
-    // forbid external copy construction
-    TestSuite(const TestSuite& other) = delete;
+ public:
+  // forbid external copy construction
+  TestSuite(const TestSuite& other) = delete;
 
-    // forbid external assignment operator construction
-    const TestSuite& operator= (const TestSuite& other) = delete;
+  // forbid external assignment operator construction
+  const TestSuite& operator=(const TestSuite& other) = delete;
 
-private:
-    /* get shared instance */
-    static TestSuite* instance;
-    /* registered test cases */
-    std::vector<TestCase*> mTests;
+ private:
+  /* get shared instance */
+  static TestSuite* instance;
+  /* registered test cases */
+  std::vector<TestCase*> mTests;
 };
 
 /*
@@ -82,32 +82,50 @@ private:
  */
 template <class Case>
 class TestRegister {
-public:
-    /*
-     * @brief initializer. register test case to suite.
-     * @param name test case name
-     */
-    TestRegister(std::string name) {
-        TestSuite::get()->add(new Case, name);
-    }
-    /*
-     * @brief deinitializer
-     */
-    ~TestRegister() {
-    }
+ public:
+  /*
+   * @brief initializer. register test case to suite.
+   * @param name test case name
+   */
+  TestRegister(std::string name) { TestSuite::get()->add(new Case, name); }
+
+  /*
+   * @brief deinitializer
+   */
+  ~TestRegister() {}
 };
 
 #define TESTREGISTER(Case, name) static TestRegister<Case> __##Case(name)
 
-#define TEST_ASSERT(x)                                           \
-    {                                                            \
-        int res = (x);                                           \
-        if (res) {                                               \
-            printf("Return error for test case, %s, %d\n", __FUNCTION__, __LINE__); \
-            return false;                                        \
-        }                                                        \
-    }
+#define TEST_ASSERT(x)                                                        \
+  {                                                                           \
+    int res = (x);                                                            \
+    if (res) {                                                                \
+      printf("Return error for test case, %s, %d\n", __FUNCTION__, __LINE__); \
+      return false;                                                           \
+    }                                                                         \
+  }
 
+#define SUCCESS (0)
+#define FAILURE (-1)
+
+#define PRINT printf
+
+// Error information  --- red
+#define LOGE(...)                                       \
+  PRINT("\033[31;22m[%s:%d] ", __FUNCTION__, __LINE__); \
+  PRINT(__VA_ARGS__);                                   \
+  PRINT("\033[0m\n")
+// Normal information --- green
+#define LOGI(...)                                       \
+  PRINT("\033[32;22m[%s:%d] ", __FUNCTION__, __LINE__); \
+  PRINT(__VA_ARGS__);                                   \
+  PRINT("\033[0m\n")
+// Debug information  --- blue
+#define LOGD(...)                                       \
+  PRINT("\033[34;22m[%s:%d] ", __FUNCTION__, __LINE__); \
+  PRINT(__VA_ARGS__);                                   \
+  PRINT("\033[0m\n")
 
 #ifdef __cplusplus
 extern "C" {
