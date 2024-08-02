@@ -23,11 +23,11 @@ class transposeTest : public TestCase {
   int _nrow = 0;
   // the column size of matrix
   int _ncol = 0;
-  // source data before transposition
+  // source data before transpose
   uint8_t* _pSrc = nullptr;
-  // real destination data after transposition
+  // real destination data after transpose
   uint8_t* _pDst = nullptr;
-  // expected destination data after transposition
+  // expected destination data after transpose
   uint8_t* _pDstExpect = nullptr;
   // how many rounds of test for correctness verification
   int _repeatCorrect = 10;
@@ -90,6 +90,50 @@ class transposeTest : public TestCase {
     return;
   }
 
+  /* naive transpose + restirct */
+  inline void restricTranspose() {
+    const uint8_t* const __restrict pSrc = _pSrc;
+    uint8_t* const __restrict pDst       = _pDst;
+
+    for (int irow = 0; irow < _nrow; ++irow) {
+      for (int icol = 0; icol < _ncol; ++icol) {
+        *(pDst + icol * _nrow + irow) = *(pSrc + irow * _ncol + icol);
+      }
+    }
+    return;
+  }
+
+  /* naive transpose + loop tiling */
+  inline void tileTranspose(int tilesize) {
+    int nbR = _nrow / tilesize;
+    int nbC = _ncol / tilesize;
+    // LOGI("tilesize = %d, nbR = %d, nbC = %d", tilesize, nbR, nbC);
+
+    for (int ibr = 0; ibr < nbR; ++ibr) {
+      for (int ibc = 0; ibc < nbC; ++ibc) {
+        for (int irow = 0; irow < tilesize; ++irow) {
+          for (int icol = 0; icol < tilesize; ++icol) {
+            *(_pDst + (ibc * tilesize + icol) * _nrow + ibr * tilesize + irow) =
+                *(_pSrc + (ibr * tilesize + irow) * _ncol + ibc * tilesize +
+                  icol);
+          }
+        }
+      }
+    }
+    return;
+  }
+
+  /* naive transpose + openmp */
+  inline void ompTranspose(int threadNum) {
+#pragma omp parallel for num_threads(threadNum) schedule(dynamic)
+    for (int irow = 0; irow < _nrow; ++irow) {
+      for (int icol = 0; icol < _ncol; ++icol) {
+        *(_pDst + icol * _nrow + irow) = *(_pSrc + irow * _ncol + icol);
+      }
+    }
+    return;
+  }
+
   /* optimize by changing the pattern of read and write,
    * dst[irow][icol] = src[icol][irow],
    * source data is read non-consecutively,
@@ -118,23 +162,24 @@ class transposeTest : public TestCase {
     return;
   }
 
-  /* optimize by using loop titling and restrict keyword,
+  /* optimize by using loop tiling and restrict keyword,
    * source data is read non-consecutively,
    * destination data is written consecutively */
-  inline void writeConsecutiveRestrictTileTranspose(int block) {
+  inline void writeConsecutiveRestrictTileTranspose(int tilesize) {
     const uint8_t* const __restrict pSrc = _pSrc;
     uint8_t* const __restrict pDst       = _pDst;
 
-    int nbR                              = _nrow / block;
-    int nbC                              = _ncol / block;
-    // LOGI("block = %d, nbR = %d, nbC = %d", block, nbR, nbC);
+    int nbR                              = _nrow / tilesize;
+    int nbC                              = _ncol / tilesize;
+    // LOGI("tilesize = %d, nbR = %d, nbC = %d", tilesize, nbR, nbC);
 
     for (int ibr = 0; ibr < nbR; ++ibr) {
       for (int ibc = 0; ibc < nbC; ++ibc) {
-        for (int irow = 0; irow < block; ++irow) {
-          for (int icol = 0; icol < block; ++icol) {
-            *(pDst + (ibr * block + irow) * _ncol + ibc * block + icol) =
-                *(pSrc + (ibc * block + icol) * _nrow + ibr * block + irow);
+        for (int irow = 0; irow < tilesize; ++irow) {
+          for (int icol = 0; icol < tilesize; ++icol) {
+            *(pDst + (ibr * tilesize + irow) * _ncol + ibc * tilesize + icol) =
+                *(pSrc + (ibc * tilesize + icol) * _nrow + ibr * tilesize +
+                  irow);
           }
         }
       }
@@ -142,24 +187,26 @@ class transposeTest : public TestCase {
     return;
   }
 
-  /* optimize by using multithreading, loop titling and restrict keyword,
+  /* optimize by using multithreading, loop tiling and restrict keyword,
    * source data is read non-consecutively,
    * destination data is written consecutively */
-  inline void writeConsecutiveRestrictTileOmpTranspose(int block) {
+  inline void writeConsecutiveRestrictTileOmpTranspose(int tilesize,
+                                                       int threadnum) {
     const uint8_t* const __restrict pSrc = _pSrc;
     uint8_t* const __restrict pDst       = _pDst;
 
-    int nbR                              = _nrow / block;
-    int nbC                              = _ncol / block;
-    // LOGI("block = %d, nbR = %d, nbC = %d", block, nbR, nbC);
+    int nbR                              = _nrow / tilesize;
+    int nbC                              = _ncol / tilesize;
+    // LOGI("tilesize = %d, nbR = %d, nbC = %d", tilesize, nbR, nbC);
 
-#pragma omp parallel for num_threads(3) schedule(dynamic)
+#pragma omp parallel for num_threads(threadnum) schedule(dynamic)
     for (int ibr = 0; ibr < nbR; ++ibr) {
       for (int ibc = 0; ibc < nbC; ++ibc) {
-        for (int irow = 0; irow < block; ++irow) {
-          for (int icol = 0; icol < block; ++icol) {
-            *(pDst + (ibr * block + irow) * _ncol + ibc * block + icol) =
-                *(pSrc + (ibc * block + icol) * _nrow + ibr * block + irow);
+        for (int irow = 0; irow < tilesize; ++irow) {
+          for (int icol = 0; icol < tilesize; ++icol) {
+            *(pDst + (ibr * tilesize + irow) * _ncol + ibc * tilesize + icol) =
+                *(pSrc + (ibc * tilesize + icol) * _nrow + ibr * tilesize +
+                  irow);
           }
         }
       }
@@ -209,6 +256,179 @@ class transposeTest : public TestCase {
     return SUCCESS;
   }
 
+  /* optimization method, restrict */
+  bool testRestrictTranspose(int nrow, int ncol, int repeatTime = 1000,
+                             int warmup = 100) {
+    init(nrow, ncol, repeatTime, warmup);
+
+    /*=============
+      correctness verfication
+    =============*/
+    int k;
+    LOGI("test correctness...");
+    for (k = 0; k < _repeatCorrect; ++k) {
+      // generate random source data
+      genRandomSrcData(0, 255);
+      // calculate expected destination data
+      naiveTranspose();
+      // calculate real destination data
+      restricTranspose();
+      // compare real data with expected data
+      if (!compare()) {
+        LOGE("test correctness, %d-th test failed", k);
+      }
+    }
+    if (k == _repeatCorrect) {
+      LOGI("test correctness, succeeded");
+    } else {
+      LOGE("test correctness, failed");
+      return FAILURE;
+    }
+
+    /*=============
+      time performance measurement
+    =============*/
+    // warmup
+    for (int i = 0; i < _warmup; ++i) {
+      restricTranspose();
+    }
+
+    std::chrono::steady_clock::time_point time_begin =
+        std::chrono::steady_clock::now();
+
+    for (int i = 0; i < _repeatTime; ++i) {
+      restricTranspose();
+    }
+    std::chrono::steady_clock::time_point time_end =
+        std::chrono::steady_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        time_end - time_begin)
+                        .count();
+
+    LOGI("time elapsed on average: %f ms", (float)duration / _repeatTime);
+
+    deinit();
+
+    return SUCCESS;
+  }
+
+  /* optimization method, loop tiling */
+  bool testTitleTranspose(int nrow, int ncol, int repeatTime = 1000,
+                          int warmup = 100, int tilesize = 64) {
+    init(nrow, ncol, repeatTime, warmup);
+
+    /*=============
+      correctness verfication
+    =============*/
+    int k;
+    LOGI("test correctness...");
+    for (k = 0; k < _repeatCorrect; ++k) {
+      // generate random source data
+      genRandomSrcData(0, 255);
+      // calculate expected destination data
+      naiveTranspose();
+      // calculate real destination data
+      tileTranspose(tilesize);
+      // compare real data with expected data
+      if (!compare()) {
+        LOGE("test correctness, %d-th test failed", k);
+        break;
+      }
+    }
+    if (k == _repeatCorrect) {
+      LOGI("test correctness, succeeded");
+    } else {
+      LOGE("test correctness, failed");
+      return FAILURE;
+    }
+
+    /*=============
+      time performance measurement
+    =============*/
+    // warmup
+    for (int i = 0; i < _warmup; ++i) {
+      tileTranspose(tilesize);
+    }
+
+    std::chrono::steady_clock::time_point time_begin =
+        std::chrono::steady_clock::now();
+
+    for (int i = 0; i < _repeatTime; ++i) {
+      tileTranspose(tilesize);
+    }
+    std::chrono::steady_clock::time_point time_end =
+        std::chrono::steady_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        time_end - time_begin)
+                        .count();
+
+    LOGI("time elapsed on average: %f ms", (float)duration / _repeatTime);
+
+    deinit();
+
+    return SUCCESS;
+  }
+
+  /* optimization method, openmp */
+  bool testOmpTranspose(int nrow, int ncol, int repeatTime = 1000,
+                        int warmup = 100, int threadNum = 3) {
+    init(nrow, ncol, repeatTime, warmup);
+
+    /*=============
+      correctness verfication
+    =============*/
+    int k;
+    LOGI("test correctness...");
+    for (k = 0; k < _repeatCorrect; ++k) {
+      // generate random source data
+      genRandomSrcData(0, 255);
+      // calculate expected destination data
+      naiveTranspose();
+      // calculate real destination data
+      ompTranspose(threadNum);
+      // compare real data with expected data
+      if (!compare()) {
+        LOGE("test correctness, %d-th test failed", k);
+        break;
+      }
+    }
+    if (k == _repeatCorrect) {
+      LOGI("test correctness, succeeded");
+    } else {
+      LOGE("test correctness, failed");
+      return FAILURE;
+    }
+
+    /*=============
+      time performance measurement
+    =============*/
+    // warmup
+    for (int i = 0; i < _warmup; ++i) {
+      ompTranspose(threadNum);
+    }
+
+    std::chrono::steady_clock::time_point time_begin =
+        std::chrono::steady_clock::now();
+
+    for (int i = 0; i < _repeatTime; ++i) {
+      ompTranspose(threadNum);
+    }
+    std::chrono::steady_clock::time_point time_end =
+        std::chrono::steady_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+                        time_end - time_begin)
+                        .count();
+
+    LOGI("time elapsed on average: %f ms", (float)duration / _repeatTime);
+
+    deinit();
+
+    return SUCCESS;
+  }
+
   /* optimization method, read non-consecutively, write consecutively */
   bool testWriteConsecutiveTranspose(int nrow, int ncol, int repeatTime = 1000,
                                      int warmup = 100) {
@@ -235,7 +455,7 @@ class transposeTest : public TestCase {
     if (k == _repeatCorrect) {
       LOGI("test correctness, succeeded");
     } else {
-      LOGI("test correctness, failed");
+      LOGE("test correctness, failed");
       return FAILURE;
     }
 
@@ -267,7 +487,8 @@ class transposeTest : public TestCase {
     return SUCCESS;
   }
 
-  /* optimization method, read non-consecutively, write consecutively + restrict
+  /* optimization method, read non-consecutively, write consecutively +
+   * restrict
    */
   bool testWriteConsecutiveRestrictTranspose(int nrow, int ncol,
                                              int repeatTime = 1000,
@@ -295,7 +516,7 @@ class transposeTest : public TestCase {
     if (k == _repeatCorrect) {
       LOGI("test correctness, succeeded");
     } else {
-      LOGI("test correctness, failed");
+      LOGE("test correctness, failed");
       return FAILURE;
     }
 
@@ -327,14 +548,14 @@ class transposeTest : public TestCase {
     return SUCCESS;
   }
 
-  /* optimization method, read non-consecutively, write consecutively + restrict
+  /* optimization method, read non-consecutively, write consecutively +
+   * restrict
    * + tile by tile */
   bool testWriteConsecutiveRestrictTileTranspose(int nrow, int ncol,
                                                  int repeatTime = 1000,
                                                  int warmup     = 100,
-                                                 int tilesize   = 128) {
+                                                 int tilesize   = 64) {
     init(nrow, ncol, repeatTime, warmup);
-    int block = tilesize;
 
     /*=============
       correctness verfication
@@ -347,7 +568,7 @@ class transposeTest : public TestCase {
       // calculate expected destination data
       naiveTranspose();
       // calculate real destination data
-      writeConsecutiveRestrictTileTranspose(block);
+      writeConsecutiveRestrictTileTranspose(tilesize);
       // compare real data with expected data
       if (!compare()) {
         LOGE("test correctness, %d-th test failed", k);
@@ -357,7 +578,7 @@ class transposeTest : public TestCase {
     if (k == _repeatCorrect) {
       LOGI("test correctness, succeeded");
     } else {
-      LOGI("test correctness, failed");
+      LOGE("test correctness, failed");
       return FAILURE;
     }
 
@@ -366,14 +587,14 @@ class transposeTest : public TestCase {
     =============*/
     // warmup
     for (int i = 0; i < _warmup; ++i) {
-      writeConsecutiveRestrictTileTranspose(block);
+      writeConsecutiveRestrictTileTranspose(tilesize);
     }
 
     std::chrono::steady_clock::time_point time_begin =
         std::chrono::steady_clock::now();
 
     for (int i = 0; i < _repeatTime; ++i) {
-      writeConsecutiveRestrictTileTranspose(block);
+      writeConsecutiveRestrictTileTranspose(tilesize);
     }
     std::chrono::steady_clock::time_point time_end =
         std::chrono::steady_clock::now();
@@ -389,14 +610,15 @@ class transposeTest : public TestCase {
     return SUCCESS;
   }
 
-  /* optimization method, read non-consecutively, write consecutively + restrict
+  /* optimization method, read non-consecutively, write consecutively +
+   * restrict
    * + tile by tile + openMP */
   bool testWriteConsecutiveRestrictTileOmpTranspose(int nrow, int ncol,
                                                     int repeatTime = 1000,
                                                     int warmup     = 100,
-                                                    int tilesize   = 128) {
+                                                    int tilesize   = 128,
+                                                    int threadNum  = 1) {
     init(nrow, ncol, repeatTime, warmup);
-    int block = tilesize;
 
     /*=============
       correctness verfication
@@ -409,7 +631,7 @@ class transposeTest : public TestCase {
       // calculate expected destination data
       naiveTranspose();
       // calculate real destination data
-      writeConsecutiveRestrictTileOmpTranspose(block);
+      writeConsecutiveRestrictTileOmpTranspose(tilesize, threadNum);
       // compare real data with expected data
       if (!compare()) {
         LOGE("test correctness, %d-th test failed", k);
@@ -419,7 +641,7 @@ class transposeTest : public TestCase {
     if (k == _repeatCorrect) {
       LOGI("test correctness, succeeded");
     } else {
-      LOGI("test correctness, failed");
+      LOGE("test correctness, failed");
       return FAILURE;
     }
 
@@ -428,14 +650,14 @@ class transposeTest : public TestCase {
     =============*/
     // warmup
     for (int i = 0; i < _warmup; ++i) {
-      writeConsecutiveRestrictTileOmpTranspose(block);
+      writeConsecutiveRestrictTileOmpTranspose(tilesize, threadNum);
     }
 
     std::chrono::steady_clock::time_point time_begin =
         std::chrono::steady_clock::now();
 
     for (int i = 0; i < _repeatTime; ++i) {
-      writeConsecutiveRestrictTileOmpTranspose(block);
+      writeConsecutiveRestrictTileOmpTranspose(tilesize, threadNum);
     }
     std::chrono::steady_clock::time_point time_end =
         std::chrono::steady_clock::now();
