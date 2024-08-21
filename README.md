@@ -1,12 +1,29 @@
 # design-pattern
 This repo is used to provide the C++ implemention of common design patterns.
 
-## [singleton](singleton/singleton.md)
-## [factory](factory/factory.md)
-## [decorator](decorator/decorator.md)
-## [iterator](iterator/iterator.md)
-## [observer](observer/observer.md)
-## [chain of responsiblity](chain_of_responsiblity/chain_of_responsiblity.md)
-## [builder](builder/builder.md)
-## [prototype](prototype/prototype.md)
-## [strategy](strategy/strategy.md)
+## Creational Design Patterns
+###  [Singleton](singleton/singleton.md)
+###  [Factory](factory/factory.md)
+###  [Builder](builder/builder.md)
+###  [Prototype](prototype/prototype.md)
+
+## Structural Design Patterns
+###  [Decorator](decorator/decorator.md)
+###  Adapter
+###  Bridge
+###  Composite
+###  Facade
+###  Proxy
+###  Flyweight
+
+## Behavioral Design Patterns
+###  [Iterator](iterator/iterator.md)
+###  [Observer](observer/observer.md)
+###  [Chain of responsiblity](chain_of_responsiblity/chain_of_responsiblity.md)
+###  [Strategy](strategy/strategy.md)
+###  [State](state/state.md)
+###  Command
+###  Mediator
+###  Memento
+###  Template
+###  Visitor
