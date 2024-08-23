@@ -9,7 +9,7 @@ This repo is used to provide the C++ implemention of common design patterns.
 
 ## Structural Design Patterns
 ###  [Decorator](decorator/decorator.md)
-###  Adapter
+###  [Adapter](adaptor/adaptor.md)
 ###  Bridge
 ###  Composite
 ###  Facade
@@ -27,3 +27,17 @@ This repo is used to provide the C++ implemention of common design patterns.
 ###  Memento
 ###  Template
 ###  Visitor
+
+## Build and run
+Build:
+
+Take the Adaptor pattern as an example:
+```
+cd adaptor
+mkdir build && cd build
+cmake .. && make
+```
+Run:
+```
+./client.out
+```
